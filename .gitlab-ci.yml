@@ -1,0 +1,32 @@
+stages:
+  - analysis
+
+variables:
+  PROJECT_TEMP_NAME: ""
+
+analysis:
+  stage: analysis
+  script:
+    - apt-get update -y
+    - apt-get install -y openssh-client curl
+    - mkdir -p ~/.ssh
+    - eval $(ssh-agent -s)
+    # - echo "$SSH_PRIVATE_KEY" | tr -d '\r' > ~/.ssh/id_rsa
+    # - chmod 600 ~/.ssh/id_rsa
+    - echo "$SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add -
+    - echo "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
+    - ssh-keyscan -H $REMOTE_SERVER >> ~/.ssh/known_hosts
+    - export PROJECT_TEMP_NAME=$(openssl rand -hex 12)
+    - echo "Project key $PROJECT_TEMP_NAME"
+    - ssh $REMOTE_USER@$REMOTE_SERVER "mkdir -p /tmp/$PROJECT_TEMP_NAME"
+    - rsync -avz --delete-after ./ $REMOTE_USER@$REMOTE_SERVER:/tmp/$PROJECT_TEMP_NAME
+    - echo "Code copied to $REMOTE_USER@$REMOTE_SERVER:/tmp/$PROJECT_TEMP_NAME"
+    - >
+      curl -X POST "$REMOTE_SERVER_PROTOCOL://$REMOTE_SERVER/scanner/scan/analysis \
+      -H "Content-Type: application/json" \
+      -H "Authorization: $AUTH_TOKEN" \
+      -d "{\"key\":\"$PROJECT_TEMP_NAME\",\"name\":\"$PROJECT_TEMP_NAME\",\"source\":\"/tmp/$PROJECT_TEMP_NAME\",\"mainBranch\":\"master\"}"
+    - ssh $REMOTE_USER@$REMOTE_SERVER "rm -rf /tmp/$PROJECT_TEMP_NAME"
+  # master branch name
+  only:
+    - master
