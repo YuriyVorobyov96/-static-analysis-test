@@ -31,6 +31,6 @@ analysis:
             "mainBranch": "$PROJECT_MAIN_BRANCH"
           }'
     - ssh $REMOTE_USER@$REMOTE_SERVER "rm -rf /tmp/$PROJECT_TEMP_NAME"
-  # master branch name
+  # main branch name
   only:
-    - $PROJECT_MAIN_BRANCH
+    - master
