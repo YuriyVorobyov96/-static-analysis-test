@@ -8,7 +8,7 @@ analysis:
   stage: analysis
   script:
     - apt-get update -y
-    - apt-get install -y openssh-client curl
+    - apt-get install -y openssh-client curl rsync
     - mkdir -p ~/.ssh
     - eval $(ssh-agent -s)
     # - echo "$SSH_PRIVATE_KEY" | tr -d '\r' > ~/.ssh/id_rsa
@@ -17,12 +17,12 @@ analysis:
     - echo "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
     - ssh-keyscan -H $REMOTE_SERVER >> ~/.ssh/known_hosts
     - export PROJECT_TEMP_NAME=$(openssl rand -hex 12)
-    - echo "Project key $PROJECT_TEMP_NAME"
+    - 'echo "Project key: $PROJECT_TEMP_NAME"'
     - ssh $REMOTE_USER@$REMOTE_SERVER "mkdir -p /tmp/$PROJECT_TEMP_NAME"
     - rsync -avz --delete-after ./ $REMOTE_USER@$REMOTE_SERVER:/tmp/$PROJECT_TEMP_NAME
     - echo "Code copied to $REMOTE_USER@$REMOTE_SERVER:/tmp/$PROJECT_TEMP_NAME"
     - >
-      curl -X POST "$REMOTE_SERVER_PROTOCOL://$REMOTE_SERVER/scanner/scan/analysis \
+      curl -X POST "$REMOTE_SERVER_API_PROTOCOL://$REMOTE_SERVER:$REMOTE_SERVER_API_PORT/scanner/scan/analysis \
       -H "Content-Type: application/json" \
       -H "Authorization: $AUTH_TOKEN" \
       -d "{\"key\":\"$PROJECT_TEMP_NAME\",\"name\":\"$PROJECT_TEMP_NAME\",\"source\":\"/tmp/$PROJECT_TEMP_NAME\",\"mainBranch\":\"master\"}"
