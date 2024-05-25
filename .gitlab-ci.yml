@@ -17,7 +17,7 @@ analysis:
     - export PROJECT_TEMP_NAME=$(openssl rand -hex 12)
     - 'echo "Project key: $PROJECT_TEMP_NAME"'
     - ssh $REMOTE_USER@$REMOTE_SERVER "mkdir -p /tmp/$PROJECT_TEMP_NAME"
-    - rsync -avz --delete-after ./ $REMOTE_USER@$REMOTE_SERVER:/tmp/$PROJECT_TEMP_NAME
+    - rsync -avz ./ $REMOTE_USER@$REMOTE_SERVER:/tmp/$PROJECT_TEMP_NAME
     - echo "Code copied to $REMOTE_USER@$REMOTE_SERVER:/tmp/$PROJECT_TEMP_NAME"
     - >
       curl -X POST "$REMOTE_SERVER_API_PROTOCOL://$REMOTE_SERVER:$REMOTE_SERVER_API_PORT/scanner/scan/analysis" \
