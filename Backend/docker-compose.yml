@@ -4,7 +4,8 @@ services:
   db:
     container_name: database
     build: ./mysql
-    command: --default-authentication-plugin=mysql_native_password
+    # command: --default-authentication-plugin=mysql_native_password
+    command: ["mysqld", "--mysql-native-password=ON"]
     restart: always
     environment:
       MYSQL_ROOT_PASSWORD: php

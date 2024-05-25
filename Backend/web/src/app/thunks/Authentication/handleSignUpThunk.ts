@@ -65,7 +65,10 @@ const handleSignUpThunk = ({ newData }: { newData: any }) => (dispatch: Dispatch
 				toast.clearWaitingQueue();
 
 			}
-		}).catch(res=>(toast.error("Backend Server is unresponsive.",{position: "top-center"})));
+		}).catch(res=>{
+			console.log(res);
+			toast.error("Backend Server is unresponsive.",{position: "top-center"});
+		});
 };
 
 export default handleSignUpThunk;

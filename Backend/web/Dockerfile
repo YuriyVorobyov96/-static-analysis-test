@@ -12,7 +12,7 @@ RUN yarn cache clean --all
 RUN yarn install
 # RUN npx browserslist@latest --update-db
 # build the project for production
-RUN yarn build -s
+RUN yarn build
 
 # set up production environment
 # the base image for this is an alpine based nginx image
