@@ -3,6 +3,7 @@ stages:
 
 variables:
   PROJECT_TEMP_NAME: ""
+  PROJECT_MAIN_BRANCH: "master"
 
 analysis:
   stage: analysis
@@ -23,8 +24,13 @@ analysis:
       curl -X POST "$REMOTE_SERVER_API_ADDRESS/scanner/scan/analysis" \
       -H "Content-Type: application/json" \
       -H "Authorization: $AUTH_TOKEN" \
-      -d "{\"key\":\"$PROJECT_TEMP_NAME\",\"name\":\"$PROJECT_TEMP_NAME\",\"source\":\"/tmp/$PROJECT_TEMP_NAME\",\"mainBranch\":\"master\"}"
+      -d '{
+            "key": "$PROJECT_TEMP_NAME",
+            "name": "$PROJECT_TEMP_NAME",
+            "source": "/tmp/$PROJECT_TEMP_NAME",
+            "mainBranch": "$PROJECT_MAIN_BRANCH"
+          }'
     - ssh $REMOTE_USER@$REMOTE_SERVER "rm -rf /tmp/$PROJECT_TEMP_NAME"
   # master branch name
   only:
-    - master
+    - $PROJECT_MAIN_BRANCH
