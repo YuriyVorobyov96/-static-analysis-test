@@ -20,16 +20,35 @@ analysis:
     - ssh $REMOTE_USER@$REMOTE_SERVER "mkdir -p /tmp/$PROJECT_TEMP_NAME"
     - rsync -avz ./ $REMOTE_USER@$REMOTE_SERVER:/tmp/$PROJECT_TEMP_NAME
     - echo "Code copied to $REMOTE_USER@$REMOTE_SERVER:/tmp/$PROJECT_TEMP_NAME"
+    # - |
+    #   curl -X POST "$REMOTE_SERVER_API_ADDRESS/scanner/scan/analysis" \
+    #   -H "Content-Type: application/json" \
+    #   -H "Authorization: $AUTH_TOKEN" \
+    #   -d '{
+    #         "key": "$PROJECT_TEMP_NAME",
+    #         "name": "$PROJECT_TEMP_NAME",
+    #         "source": "/tmp/$PROJECT_TEMP_NAME",
+    #         "mainBranch": "$PROJECT_MAIN_BRANCH"
+    #       }'
     - |
-      curl -X POST "$REMOTE_SERVER_API_ADDRESS/scanner/scan/analysis" \
-      -H "Content-Type: application/json" \
-      -H "Authorization: $AUTH_TOKEN" \
-      -d '{
-            "key": "$PROJECT_TEMP_NAME",
-            "name": "$PROJECT_TEMP_NAME",
-            "source": "/tmp/$PROJECT_TEMP_NAME",
-            "mainBranch": "$PROJECT_MAIN_BRANCH"
-          }'
+      REQUEST_BODY=$(cat <<EOF
+      {
+        "key": "$PROJECT_TEMP_NAME",
+        "name": "$PROJECT_TEMP_NAME",
+        "source": "/tmp/$PROJECT_TEMP_NAME",
+        "mainBranch": "$PROJECT_MAIN_BRANCH"
+      }
+      EOF
+      )
+      echo "Request Body: $REQUEST_BODY"
+      RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" -X POST "$REMOTE_SERVER_API_ADDRESS/scanner/scan/analysis" \
+           -H "Content-Type: application/json" \
+           -H "Authorization: $AUTH_TOKEN" \
+           -d "$REQUEST_BODY")
+      if [ "$RESPONSE" -ne 200 ]; then
+        echo "Request failed with status code $RESPONSE"
+        exit 1
+      fi
     - ssh $REMOTE_USER@$REMOTE_SERVER "rm -rf /tmp/$PROJECT_TEMP_NAME"
   # main branch name
   only:
