@@ -76,6 +76,8 @@ fetch_issues:
         echo "Warning! Find security issues. List of issues: $ISSUES_RESPONSE_BODY"
         echo "$ISSUES_RESPONSE_BODY" > issues_list.json
         echo "Issues saved to file issues_list.json"
+        - ls -l issues_list.json
+        - cat issues_list.json
         exit 2 
       fi
   artifacts:
