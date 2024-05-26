@@ -20,7 +20,7 @@ analysis:
     - ssh $REMOTE_USER@$REMOTE_SERVER "mkdir -p /tmp/$PROJECT_TEMP_NAME"
     - rsync -avz ./ $REMOTE_USER@$REMOTE_SERVER:/tmp/$PROJECT_TEMP_NAME
     - echo "Code copied to $REMOTE_USER@$REMOTE_SERVER:/tmp/$PROJECT_TEMP_NAME"
-    - >
+    - |
       curl -X POST "$REMOTE_SERVER_API_ADDRESS/scanner/scan/analysis" \
       -H "Content-Type: application/json" \
       -H "Authorization: $AUTH_TOKEN" \
