@@ -107,10 +107,11 @@ jobs:
             exit 1
           fi
           if [ "$ISSUES_RESPONSE_BODY" != "[]" ]; then
-            echo "Warning! Found security issues"
+            echo "::warning:: Warning! Found security issues"
             echo "$ISSUES_RESPONSE_BODY"
             echo "$ISSUES_RESPONSE_BODY" > issues_list.json
             echo "Issues saved to file issues_list.json"
+          fi
         env:
           REMOTE_SERVER_API_ADDRESS: ${{ secrets.REMOTE_SERVER_API_ADDRESS }}
           AUTH_TOKEN: ${{ secrets.AUTH_TOKEN }}
