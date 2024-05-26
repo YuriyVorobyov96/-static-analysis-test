@@ -66,19 +66,22 @@ fetch_issues:
       ISSUES_RESPONSE=$(curl -s --connect-timeout 0 --max-time 0 -w "\n%{http_code}" -X GET "$REMOTE_SERVER_API_ADDRESS/scanner/issues/get-all-security-issues?name=$PROJECT_TEMP_NAME" \
         -H "Content-Type: application/json" \
         -H "Authorization: $AUTH_TOKEN")
-      ISSUES_HTTP_STATUS=$(echo "$ISSUES_RESPONSE" | tail -n1)
-      ISSUES_RESPONSE_BODY=$(echo "$ISSUES_RESPONSE" | sed '$ d')
-      if [ "$ISSUES_HTTP_STATUS" -ne 200 ]; then
+    - ISSUES_HTTP_STATUS=$(echo "$ISSUES_RESPONSE" | tail -n1)
+    - ISSUES_RESPONSE_BODY=$(echo "$ISSUES_RESPONSE" | sed '$ d')
+    - if [ "$ISSUES_HTTP_STATUS" -ne 200 ]; then
         echo "Request failed with status code $ISSUES_HTTP_STATUS"
         exit 1
       fi
-      if [ "$ISSUES_RESPONSE_BODY" != "[]" ]; then
-        echo "Warning! Find security issues. List of issues: $ISSUES_RESPONSE_BODY"
+    - if [ "$ISSUES_RESPONSE_BODY" != "[]" ]; then
+        echo "Warning! Find security issues"
+        echo "$ISSUES_RESPONSE_BODY"
         echo "$ISSUES_RESPONSE_BODY" > issues_list.json
         echo "Issues saved to file issues_list.json"
-        - ls -l issues_list.json
-        - cat issues_list.json
-        exit 2 
+      fi
+    - if [ -f issues_list.json ]; then
+        ls -l issues_list.json;
+        cat issues_list.json;
+        exit 2;
       fi
   artifacts:
     paths:
