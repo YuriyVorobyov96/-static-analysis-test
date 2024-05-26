@@ -41,10 +41,12 @@ analysis:
       echo "Curl Response: $RESPONSE_BODY"
       if [ "$HTTP_STATUS" -ne 200 ]; then
         echo "Request failed with status code $HTTP_STATUS"
+        ssh $REMOTE_USER@$REMOTE_SERVER "rm -rf $REMOTE_SERVER_TMP_DIR/$PROJECT_TEMP_NAME"
         exit 1
       fi
       if [ "$RESPONSE_BODY" != "[]" ]; then
         echo "Warning: Response is not an empty JSON array. Response: $RESPONSE_BODY"
+        ssh $REMOTE_USER@$REMOTE_SERVER "rm -rf $REMOTE_SERVER_TMP_DIR/$PROJECT_TEMP_NAME"
         exit 2  # Custom exit code for warnings
       fi
     - ssh $REMOTE_USER@$REMOTE_SERVER "rm -rf $REMOTE_SERVER_TMP_DIR/$PROJECT_TEMP_NAME"
