@@ -107,7 +107,7 @@ jobs:
             exit 1
           fi
           if [ "$ISSUES_RESPONSE_BODY" != "[]" ]; then
-            echo "::warning Warning! Found security issues"
+            echo "Warning! Found security issues"
             echo "$ISSUES_RESPONSE_BODY"
             echo "$ISSUES_RESPONSE_BODY" > issues_list.json
             echo "Issues saved to file issues_list.json"
