@@ -3,14 +3,14 @@ stages:
 
 variables:
   PROJECT_TEMP_NAME: ""
-  PROJECT_MAIN_BRANCH: "master"
+  PROJECT_MAIN_BRANCH: "master" # Default branch name if not set elsewhere
 
 analysis:
   stage: analysis
   script:
     - set -x
     - apt-get update -y
-    - apt-get install -y openssh-client curl rsync
+    - apt-get install -y openssh-client curl rsync jq
     - mkdir -p ~/.ssh
     - eval $(ssh-agent -s)
     - echo "$SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add -
@@ -32,15 +32,24 @@ analysis:
       EOF
       )
       echo "Request Body: $REQUEST_BODY"
-      RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" -X POST "$REMOTE_SERVER_API_ADDRESS/scanner/scan/analysis" \
+      RESPONSE=$(curl -s -w "\n%{http_code}" -X POST "$REMOTE_SERVER_API_ADDRESS/scanner/scan/analysis" \
            -H "Content-Type: application/json" \
            -H "Authorization: $AUTH_TOKEN" \
            -d "$REQUEST_BODY")
-      if [ "$RESPONSE" -ne 200 ]; then
-        echo "Request failed with status code $RESPONSE"
+      HTTP_STATUS=$(echo "$RESPONSE" | tail -n1)
+      RESPONSE_BODY=$(echo "$RESPONSE" | sed '$ d')
+      echo "Curl Response: $RESPONSE_BODY"
+      if [ "$HTTP_STATUS" -ne 200 ]; then
+        echo "Request failed with status code $HTTP_STATUS"
         exit 1
       fi
+      if [ "$RESPONSE_BODY" != "[]" ]; then
+        echo "Warning: Response is not an empty JSON array. Response: $RESPONSE_BODY"
+        exit 2  # Custom exit code for warnings
+      fi
     - ssh $REMOTE_USER@$REMOTE_SERVER "rm -rf $REMOTE_SERVER_TMP_DIR/$PROJECT_TEMP_NAME"
-  # main branch name
+  allow_failure:
+    exit_codes: [2]
+  # Default branch name if not set elsewhere
   only:
     - master
