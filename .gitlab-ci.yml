@@ -8,6 +8,7 @@ variables:
 analysis:
   stage: analysis
   script:
+    - set -x
     - apt-get update -y
     - apt-get install -y openssh-client curl rsync
     - mkdir -p ~/.ssh
