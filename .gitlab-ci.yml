@@ -73,7 +73,14 @@ fetch_issues:
       fi
       if [ "$ISSUES_RESPONSE_BODY" != "[]" ]; then
         echo "Warning! Find security issues. List of issues: $ISSUES_RESPONSE_BODY"
+        echo "$ISSUES_RESPONSE_BODY" > issues_list.json
+        if [ -f issues_list.json ]; then
+          echo "Downloading issues_list.json"
+          curl --remote-name issues_list.json
+        fi
         exit 2 
       fi
+  allow_failure:
+    exit_codes: [2]
   only:
     - master
