@@ -25,11 +25,11 @@ jobs:
           sudo apt-get update -y
           sudo apt-get install -y openssh-client curl rsync jq
 
-      - name: Add SSH key
-        run: |
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" | tr -d '\r' | ssh-add -
-        env:
-          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+      - name: Start SSH agent
+        id: ssh-agent
+        uses: webfactory/ssh-agent@v0.5.4
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
       - name: Generate random project name
         id: project_name
@@ -74,40 +74,12 @@ jobs:
 
   fetch_issues:
     runs-on: ubuntu-latest
-    needs: analysis
+    needs:
+      - analysis
     if: ${{ needs.analysis.result == 'success' }}
     steps:
       - name: Set up SSH
         run: |
           mkdir -p ~/.ssh
           ssh-keyscan -H ${{ secrets.REMOTE_SERVER }} >> ~/.ssh/known_hosts
-        env:
-          SSH_KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
 
-      - name: Fetch security issues
-        run: |
-          ISSUES_RESPONSE=$(curl -s --connect-timeout 0 --max-time 0 -w "\n%{http_code}" -X GET "${{ secrets.REMOTE_SERVER_API_ADDRESS }}/scanner/issues/get-all-security-issues?name=$PROJECT_TEMP_NAME" \
-            -H "Content-Type: application/json" \
-            -H "Authorization: ${{ secrets.AUTH_TOKEN }}")
-          ISSUES_HTTP_STATUS=$(echo "$ISSUES_RESPONSE" | tail -n1)
-          ISSUES_RESPONSE_BODY=$(echo "$ISSUES_RESPONSE" | sed '$ d')
-          if [ "$ISSUES_HTTP_STATUS" -ne 200 ]; then
-            echo "Request failed with status code $ISSUES_HTTP_STATUS"
-            exit 1
-          fi
-          if [ "$ISSUES_RESPONSE_BODY" != "[]" ]; then
-            echo "Warning! Found security issues"
-            echo "$ISSUES_RESPONSE_BODY"
-            echo "$ISSUES_RESPONSE_BODY" > issues_list.json
-            echo "Issues saved to file issues_list.json"
-            exit 2
-          fi
-        env:
-          REMOTE_SERVER_API_ADDRESS: ${{ secrets.REMOTE_SERVER_API_ADDRESS }}
-          AUTH_TOKEN: ${{ secrets.AUTH_TOKEN }}
-      - name: Upload issues list artifact
-        if: success() || failure()
-        uses: actions/upload-artifact@v2
-        with:
-          name: issues_list
-          path: issues_list.json
