@@ -18,25 +18,15 @@ analysis:
     - ssh-keyscan -H $REMOTE_SERVER >> ~/.ssh/known_hosts
     - export PROJECT_TEMP_NAME=$(openssl rand -hex 12)
     - 'echo "Project key: $PROJECT_TEMP_NAME"'
-    - ssh $REMOTE_USER@$REMOTE_SERVER "mkdir -p /tmp/$PROJECT_TEMP_NAME"
-    - rsync -avz ./ $REMOTE_USER@$REMOTE_SERVER:/tmp/$PROJECT_TEMP_NAME
-    - echo "Code copied to $REMOTE_USER@$REMOTE_SERVER:/tmp/$PROJECT_TEMP_NAME"
-    # - |
-    #   curl -X POST "$REMOTE_SERVER_API_ADDRESS/scanner/scan/analysis" \
-    #   -H "Content-Type: application/json" \
-    #   -H "Authorization: $AUTH_TOKEN" \
-    #   -d '{
-    #         "key": "$PROJECT_TEMP_NAME",
-    #         "name": "$PROJECT_TEMP_NAME",
-    #         "source": "/tmp/$PROJECT_TEMP_NAME",
-    #         "mainBranch": "$PROJECT_MAIN_BRANCH"
-    #       }'
+    - ssh $REMOTE_USER@$REMOTE_SERVER "mkdir -p $REMOTE_SERVER_TMP_DIR/$PROJECT_TEMP_NAME"
+    - rsync -avz ./ $REMOTE_USER@$REMOTE_SERVER:$REMOTE_SERVER_TMP_DIR/$PROJECT_TEMP_NAME
+    - echo "Code copied to $REMOTE_USER@$REMOTE_SERVER:$REMOTE_SERVER_TMP_DIR/$PROJECT_TEMP_NAME"
     - |
       REQUEST_BODY=$(cat <<EOF
       {
         "key": "$PROJECT_TEMP_NAME",
         "name": "$PROJECT_TEMP_NAME",
-        "source": "/tmp/$PROJECT_TEMP_NAME",
+        "source": "$REMOTE_SERVER_TMP_DIR/$PROJECT_TEMP_NAME",
         "mainBranch": "$PROJECT_MAIN_BRANCH"
       }
       EOF
@@ -50,7 +40,7 @@ analysis:
         echo "Request failed with status code $RESPONSE"
         exit 1
       fi
-    - ssh $REMOTE_USER@$REMOTE_SERVER "rm -rf /tmp/$PROJECT_TEMP_NAME"
+    - ssh $REMOTE_USER@$REMOTE_SERVER "rm -rf $REMOTE_SERVER_TMP_DIR/$PROJECT_TEMP_NAME"
   # main branch name
   only:
     - master
