@@ -79,16 +79,13 @@ fetch_issues:
         echo "$ISSUES_RESPONSE_BODY"
         echo "$ISSUES_RESPONSE_BODY" > issues_list.json
         echo "Issues saved to file issues_list.json"
-      fi
-    - |
-      if [ -f issues_list.json ]; then
-        ls -l issues_list.json;
-        cat issues_list.json;
+        exit 2
       fi
   artifacts:
     paths:
       - issues_list.json
-  # allow_failure:
-  #   exit_codes: [2]
+    when: always
+  allow_failure:
+    exit_codes: [2]
   only:
     - master
