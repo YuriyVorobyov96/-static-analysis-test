@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - master
+  workflow_dispatch: # Add this trigger for manual runs
 
 jobs:
   analysis:
