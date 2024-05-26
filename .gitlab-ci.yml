@@ -1,5 +1,6 @@
 stages:
   - analysis
+  - fetch_issues
 
 variables:
   PROJECT_TEMP_NAME: ""
@@ -44,24 +45,33 @@ analysis:
       fi
       echo "Waiting for 15 seconds for SonarQube internal work"
       sleep 15
-      ISSUES_RESPONSE=$(curl -s --connect-timeout 0 --max-time 0 -w "\n%{http_code}" -X GET "$REMOTE_SERVER_API_ADDRESS/scanner/issues/get-all-security-issues?name=$PROJECT_TEMP_NAME" \
-           -H "Content-Type: application/json" \
-           -H "Authorization: $AUTH_TOKEN")
-      ISSUES_HTTP_STATUS=$(echo "$ISSUES_RESPONSE" | tail -n1)
-      ISSUES_RESPONSE_BODY=$(echo "$ISSUES_RESPONSE" | sed '$ d')
-      if [ "$ISSUES_HTTP_STATUS" -ne 200 ]; then
-        echo "Request failed with status code $ISSUES_HTTP_STATUS"
-        ssh $REMOTE_USER@$REMOTE_SERVER "rm -rf $REMOTE_SERVER_TMP_DIR/$PROJECT_TEMP_NAME"
-        exit 1
-      fi
-      if [ "$ISSUES_RESPONSE_BODY" != "[]" ]; then
-        echo "Warning! Find security issues. List of issues: $ISSUES_RESPONSE_BODY"
-        ssh $REMOTE_USER@$REMOTE_SERVER "rm -rf $REMOTE_SERVER_TMP_DIR/$PROJECT_TEMP_NAME"
-        exit 2  # Custom exit code for warnings
-      fi
     - ssh $REMOTE_USER@$REMOTE_SERVER "rm -rf $REMOTE_SERVER_TMP_DIR/$PROJECT_TEMP_NAME"
   allow_failure:
     exit_codes: [2]
   # Default branch name if not set elsewhere
+  only:
+    - master
+
+fetch_issues:
+  stage: fetch_issues
+  needs:
+    - job: analysis
+      artifacts: true
+  script:
+    - set -x
+    - |
+      ISSUES_RESPONSE=$(curl -s --connect-timeout 0 --max-time 0 -w "\n%{http_code}" -X GET "$REMOTE_SERVER_API_ADDRESS/scanner/issues/get-all-security-issues?name=$PROJECT_TEMP_NAME" \
+        -H "Content-Type: application/json" \
+        -H "Authorization: $AUTH_TOKEN")
+      ISSUES_HTTP_STATUS=$(echo "$ISSUES_RESPONSE" | tail -n1)
+      ISSUES_RESPONSE_BODY=$(echo "$ISSUES_RESPONSE" | sed '$ d')
+      if [ "$ISSUES_HTTP_STATUS" -ne 200 ]; then
+        echo "Request failed with status code $ISSUES_HTTP_STATUS"
+        exit 1
+      fi
+      if [ "$ISSUES_RESPONSE_BODY" != "[]" ]; then
+        echo "Warning! Find security issues. List of issues: $ISSUES_RESPONSE_BODY"
+        exit 2 
+      fi
   only:
     - master
