@@ -3,7 +3,7 @@ stages:
   - fetch_issues
 
 variables:
-  PROJECT_TEMP_NAME: ""
+  # PROJECT_TEMP_NAME: ""
   PROJECT_MAIN_BRANCH: "master" # Default branch name if not set elsewhere
 
 analysis:
@@ -43,13 +43,13 @@ analysis:
         ssh $REMOTE_USER@$REMOTE_SERVER "rm -rf $REMOTE_SERVER_TMP_DIR/$PROJECT_TEMP_NAME"
         exit 1
       fi
-      echo "PROJECT_TEMP_NAME=$PROJECT_TEMP_NAME" > response.env
       echo "Waiting for 15 seconds for SonarQube internal work"
       sleep 15
     - ssh $REMOTE_USER@$REMOTE_SERVER "rm -rf $REMOTE_SERVER_TMP_DIR/$PROJECT_TEMP_NAME"
   artifacts:
     reports:
-      dotenv: response.env
+      dotenv: 
+        - PROJECT_TEMP_NAME
   # Default branch name if not set elsewhere
   only:
     - master
@@ -61,7 +61,7 @@ fetch_issues:
       artifacts: true
   script:
     - set -x
-    - export PROJECT_TEMP_NAME=$(cat response.env | grep PROJECT_TEMP_NAME | cut -d '=' -f2)
+    # - export PROJECT_TEMP_NAME=$(cat response.env | grep PROJECT_TEMP_NAME | cut -d '=' -f2)
     - |
       ISSUES_RESPONSE=$(curl -s --connect-timeout 0 --max-time 0 -w "\n%{http_code}" -X GET "$REMOTE_SERVER_API_ADDRESS/scanner/issues/get-all-security-issues?name=$PROJECT_TEMP_NAME" \
         -H "Content-Type: application/json" \
