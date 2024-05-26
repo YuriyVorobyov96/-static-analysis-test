@@ -84,12 +84,11 @@ fetch_issues:
       if [ -f issues_list.json ]; then
         ls -l issues_list.json;
         cat issues_list.json;
-        exit 2;
       fi
   artifacts:
     paths:
       - issues_list.json
-  allow_failure:
-    exit_codes: [2]
+  # allow_failure:
+  #   exit_codes: [2]
   only:
     - master
