@@ -4,60 +4,61 @@ stages:
 
 variables:
   PROJECT_MAIN_BRANCH: "master" # Default branch name if not set elsewhere
+  PROJECT_TEMP_NAME: "0dfff70e14224636848f998a"
 
-analysis:
-  stage: analysis
-  script:
-    - set -x
-    - apt-get update -y
-    - apt-get install -y openssh-client curl rsync jq
-    - mkdir -p ~/.ssh
-    - eval $(ssh-agent -s)
-    - echo "$SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add -
-    - echo "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
-    - ssh-keyscan -H $REMOTE_SERVER >> ~/.ssh/known_hosts
-    - export PROJECT_TEMP_NAME=$(openssl rand -hex 12)
-    - 'echo "Project key: $PROJECT_TEMP_NAME"'
-    - ssh $REMOTE_USER@$REMOTE_SERVER "mkdir -p $REMOTE_SERVER_TMP_DIR/$PROJECT_TEMP_NAME"
-    - rsync -avz ./ $REMOTE_USER@$REMOTE_SERVER:$REMOTE_SERVER_TMP_DIR/$PROJECT_TEMP_NAME
-    - echo "Code copied to $REMOTE_USER@$REMOTE_SERVER:$REMOTE_SERVER_TMP_DIR/$PROJECT_TEMP_NAME"
-    - |
-      REQUEST_BODY=$(cat <<EOF
-      {
-        "key": "$PROJECT_TEMP_NAME",
-        "name": "$PROJECT_TEMP_NAME",
-        "source": "$REMOTE_SERVER_TMP_DIR/$PROJECT_TEMP_NAME",
-        "mainBranch": "$PROJECT_MAIN_BRANCH"
-      }
-      EOF
-      )
-      echo "Request Body: $REQUEST_BODY"
-      ANALYSIS_RESPONSE=$(curl --connect-timeout 0 --max-time 0 -s -w "\n%{http_code}" -X POST "$REMOTE_SERVER_API_ADDRESS/scanner/scan/analysis" \
-           -H "Content-Type: application/json" \
-           -H "Authorization: $AUTH_TOKEN" \
-           -d "$REQUEST_BODY")
-      ANALYSIS_HTTP_STATUS=$(echo "$ANALYSIS_RESPONSE" | tail -n1)
-      if [ "$ANALYSIS_HTTP_STATUS" -ne 200 ]; then
-        echo "Request failed with status code $ANALYSIS_HTTP_STATUS"
-        ssh $REMOTE_USER@$REMOTE_SERVER "rm -rf $REMOTE_SERVER_TMP_DIR/$PROJECT_TEMP_NAME"
-        exit 1
-      fi
-      echo "Waiting for 15 seconds for SonarQube internal work"
-      sleep 15
-    - ssh $REMOTE_USER@$REMOTE_SERVER "rm -rf $REMOTE_SERVER_TMP_DIR/$PROJECT_TEMP_NAME"
-    - echo "PROJECT_TEMP_NAME=$PROJECT_TEMP_NAME" > project_name.env
-  artifacts:
-    reports:
-          dotenv: project_name.env 
-  # Default branch name if not set elsewhere
-  only:
-    - master
+# analysis:
+#   stage: analysis
+#   script:
+#     - set -x
+#     - apt-get update -y
+#     - apt-get install -y openssh-client curl rsync jq
+#     - mkdir -p ~/.ssh
+#     - eval $(ssh-agent -s)
+#     - echo "$SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add -
+#     - echo "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
+#     - ssh-keyscan -H $REMOTE_SERVER >> ~/.ssh/known_hosts
+#     - export PROJECT_TEMP_NAME=$(openssl rand -hex 12)
+#     - 'echo "Project key: $PROJECT_TEMP_NAME"'
+#     - ssh $REMOTE_USER@$REMOTE_SERVER "mkdir -p $REMOTE_SERVER_TMP_DIR/$PROJECT_TEMP_NAME"
+#     - rsync -avz ./ $REMOTE_USER@$REMOTE_SERVER:$REMOTE_SERVER_TMP_DIR/$PROJECT_TEMP_NAME
+#     - echo "Code copied to $REMOTE_USER@$REMOTE_SERVER:$REMOTE_SERVER_TMP_DIR/$PROJECT_TEMP_NAME"
+#     - |
+#       REQUEST_BODY=$(cat <<EOF
+#       {
+#         "key": "$PROJECT_TEMP_NAME",
+#         "name": "$PROJECT_TEMP_NAME",
+#         "source": "$REMOTE_SERVER_TMP_DIR/$PROJECT_TEMP_NAME",
+#         "mainBranch": "$PROJECT_MAIN_BRANCH"
+#       }
+#       EOF
+#       )
+#       echo "Request Body: $REQUEST_BODY"
+#       ANALYSIS_RESPONSE=$(curl --connect-timeout 0 --max-time 0 -s -w "\n%{http_code}" -X POST "$REMOTE_SERVER_API_ADDRESS/scanner/scan/analysis" \
+#            -H "Content-Type: application/json" \
+#            -H "Authorization: $AUTH_TOKEN" \
+#            -d "$REQUEST_BODY")
+#       ANALYSIS_HTTP_STATUS=$(echo "$ANALYSIS_RESPONSE" | tail -n1)
+#       if [ "$ANALYSIS_HTTP_STATUS" -ne 200 ]; then
+#         echo "Request failed with status code $ANALYSIS_HTTP_STATUS"
+#         ssh $REMOTE_USER@$REMOTE_SERVER "rm -rf $REMOTE_SERVER_TMP_DIR/$PROJECT_TEMP_NAME"
+#         exit 1
+#       fi
+#       echo "Waiting for 15 seconds for SonarQube internal work"
+#       sleep 15
+#     - ssh $REMOTE_USER@$REMOTE_SERVER "rm -rf $REMOTE_SERVER_TMP_DIR/$PROJECT_TEMP_NAME"
+#     - echo "PROJECT_TEMP_NAME=$PROJECT_TEMP_NAME" > project_name.env
+#   artifacts:
+#     reports:
+#           dotenv: project_name.env 
+#   # Default branch name if not set elsewhere
+#   only:
+#     - master
 
 fetch_issues:
   stage: fetch_issues
-  needs:
-    - job: analysis
-      artifacts: true
+  # needs:
+  #   - job: analysis
+  #     artifacts: true
   script:
     - set -x
     - 'echo "Project key: $PROJECT_TEMP_NAME"'
@@ -74,12 +75,12 @@ fetch_issues:
       if [ "$ISSUES_RESPONSE_BODY" != "[]" ]; then
         echo "Warning! Find security issues. List of issues: $ISSUES_RESPONSE_BODY"
         echo "$ISSUES_RESPONSE_BODY" > issues_list.json
-        if [ -f issues_list.json ]; then
-          echo "Downloading issues_list.json"
-          curl --remote-name issues_list.json
-        fi
+        echo "Issues saved to file issues_list.json"
         exit 2 
       fi
+  artifacts:
+    paths:
+      - issues_list.json
   allow_failure:
     exit_codes: [2]
   only:
